@@ -123,7 +123,7 @@ async fn handle_iq(conn: &mpsc::Sender<Iq>, push_modules: FpushPushArc, stanza: 
                     return;
                 }
             };
-            debug!(
+            warn!(
                 "Selected push_module {} for JID {} with token {}",
                 module_id, from, token
             );

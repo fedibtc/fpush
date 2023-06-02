@@ -4,7 +4,7 @@ use fpush_traits::push::{PushError, PushResult, PushTrait};
 
 use async_trait::async_trait;
 use google_fcm1::{
-    api::{Message, SendMessageRequest},
+    api::{Message, SendMessageRequest, Notification},
     oauth2, FirebaseCloudMessaging,
 };
 use log::{error, warn};
@@ -126,6 +126,16 @@ fn create_push_message(token: String) -> Message {
     Message {
         data: Some(HashMap::new()),
         token: Some(token),
+        notification: Some(create_notification()),
+        ..Default::default()
+    }
+}
+
+#[inline(always)]
+fn create_notification() -> Notification {
+    Notification {
+        body: Some("You have new messages".to_string()),
+        title: Some("Fedi Alpha".to_string()),
         ..Default::default()
     }
 }
