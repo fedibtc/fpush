@@ -4,7 +4,7 @@ use fpush_traits::push::{PushError, PushResult, PushTrait};
 
 use async_trait::async_trait;
 use google_fcm1::{
-    api::{Message, SendMessageRequest, Notification},
+    api::{Message, SendMessageRequest, Notification, AndroidConfig, AndroidNotification},
     oauth2, FirebaseCloudMessaging,
 };
 use log::{error, warn};
@@ -127,6 +127,9 @@ fn create_push_message(token: String) -> Message {
         data: Some(HashMap::new()),
         token: Some(token),
         notification: Some(create_notification()),
+        // add this to make sure we set the tag to group on Android
+        // so the user only ever sees 1 notification in their drawer
+        android: Some(create_android_config()),
         ..Default::default()
     }
 }
@@ -136,6 +139,22 @@ fn create_notification() -> Notification {
     Notification {
         body: Some("You have new messages".to_string()),
         title: Some("Fedi Alpha".to_string()),
+        ..Default::default()
+    }
+}
+
+#[inline(always)]
+fn create_android_config() -> AndroidConfig {
+    AndroidConfig {
+        notification: Some(create_android_notification()),
+        ..Default::default()
+    }
+}
+
+#[inline(always)]
+fn create_android_notification() -> AndroidNotification {
+    AndroidNotification {
+        tag: Some("new_chat_messages".to_string()),
         ..Default::default()
     }
 }
