@@ -11,7 +11,7 @@ use log::{debug, error, info, warn};
 
 use tokio::sync::mpsc;
 use tokio_xmpp::Component;
-use xmpp_parsers::{iq::Iq, pubsub::PubSub, Element, data_forms::Field, Jid};
+use xmpp_parsers::{data_forms::Field, iq::Iq, pubsub::PubSub, Element, Jid};
 
 pub(crate) async fn init_component_connection(config: &FpushConfig) -> Result<Component> {
     let component = Component::new(
@@ -185,16 +185,26 @@ fn parse_token_and_module_id(iq_payload: Element) -> Result<(String, String)> {
                 // message body of one of the <field> tags, but in some cases
                 // mod_cloud_notify sends unimportant notifications that do not correspond
                 // to unread messages but were getting captured by fpush anyway.
-                // this logic filters out those notifications so they do not reach the user 
+                // this logic filters out those notifications so they do not reach the user
                 for item in pubsub_payload.items {
                     if let Some(payload) = &item.payload {
                         for form_child in payload.children() {
                             if let Ok(form) = Element::try_from(form_child.clone()) {
                                 for child in form.children() {
                                     if let Ok(field) = Field::try_from(child.clone()) {
-                                        if field.var == "last-message-body" && field.values.is_empty() {
-                                            warn!("this is an unimportant notification from mod_cloud_notify, do not send to FCM");
-                                            return Err(Error::PubSubNonPublish);
+                                        if field.var == "last-message-body" {
+                                            if field.values.is_empty() {
+                                                warn!("this is an unimportant notification from mod_cloud_notify, do not send to FCM");
+                                                return Err(Error::PubSubNonPublish);
+                                            } else if field
+                                                .values
+                                                .get(0)
+                                                .map(|value| value.as_str())
+                                                == Some("false")
+                                            {
+                                                warn!("this notification was marked to be skipped, do not send to FCM");
+                                                return Err(Error::PubSubNonPublish);
+                                            }
                                         }
                                     }
                                 }
@@ -203,7 +213,7 @@ fn parse_token_and_module_id(iq_payload: Element) -> Result<(String, String)> {
                     }
                 }
                 Ok(("default".to_string(), pubsub_payload.node.0))
-            },
+            }
             PubSub::Publish {
                 publish: pubsub_payload,
                 publish_options: Some(publish_options),
