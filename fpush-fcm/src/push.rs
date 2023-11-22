@@ -4,7 +4,7 @@ use fpush_traits::push::{PushError, PushResult, PushTrait};
 
 use async_trait::async_trait;
 use google_fcm1::{
-    api::{Message, SendMessageRequest},
+    api::{Message, SendMessageRequest, Notification, AndroidConfig, AndroidNotification, ApnsConfig},
     oauth2, FirebaseCloudMessaging,
 };
 use log::{error, warn};
@@ -126,6 +126,52 @@ fn create_push_message(token: String) -> Message {
     Message {
         data: Some(HashMap::new()),
         token: Some(token),
+        notification: Some(create_notification()),
+        // add this to make sure we set the tag to group on Android
+        // so the user only ever sees 1 notification in their drawer
+        android: Some(create_android_config()),
+        apns: Some(create_apns_config()),
         ..Default::default()
     }
+}
+
+#[inline(always)]
+fn create_notification() -> Notification {
+    Notification {
+        body: Some("You have new messages".to_string()),
+        title: Some("Fedi Alpha".to_string()),
+        ..Default::default()
+    }
+}
+
+
+#[inline(always)]
+fn create_android_config() -> AndroidConfig {
+    AndroidConfig {
+        notification: Some(create_android_notification()),
+        ..Default::default()
+    }
+}
+
+#[inline(always)]
+fn create_android_notification() -> AndroidNotification {
+    AndroidNotification {
+        tag: Some("new_chat_messages".to_string()),
+        ..Default::default()
+    }
+}
+
+#[inline(always)]
+fn create_apns_config() -> ApnsConfig {
+    ApnsConfig {
+        headers: Some(create_ios_notification()),
+        ..Default::default()
+    }
+}
+
+#[inline(always)]
+fn create_ios_notification() -> HashMap<String, String> {
+    let mut map = HashMap::new();
+    map.insert("apns-collapse-id".to_string(), "new_chat_messages".to_string());
+    map
 }
