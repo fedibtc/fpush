@@ -139,7 +139,7 @@ fn create_push_message(token: String) -> Message {
 fn create_notification() -> Notification {
     Notification {
         body: Some("You have new messages".to_string()),
-        title: Some("Fedi Alpha".to_string()),
+        title: Some("Fedi Bravo".to_string()),
         ..Default::default()
     }
 }
